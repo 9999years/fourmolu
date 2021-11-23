@@ -51,6 +51,7 @@ We share all bar one of Ormolu's goals:
 | `diff-friendly-import-export` | `true`, `false` | Make multiline import/export lists as diff-friendly as possible (keeping the open-parentheses on the same line as the `import` line or not) |
 | `respectful`         | `true`, `false` | Whether to respect user-specified newlines, e.g. in import groupings |
 | `haddock-style`      | `multi-line`, `single-line` | Whether multiline haddocks should use `{-` or `--` |
+| `haddock-style-module` | same as `haddock-style` | `haddock-style`, but specifically for the module docstring (not specifying anything = use the same setting as `haddock-style`) |
 | `newlines-between-decls` | any integer | number of newlines between top-level declarations |
 | `fixities`           | A list of strings for defining fixities; see the "Language extensions, dependencies, and fixities" section below |
 
@@ -71,6 +72,7 @@ record-brace-space: false
 diff-friendly-import-export: true
 respectful: true
 haddock-style: multi-line
+haddock-style-module:
 newlines-between-decls: 1
 fixities: []
 ```
@@ -86,6 +88,7 @@ record-brace-space: true
 diff-friendly-import-export: false
 respectful: false
 haddock-style: single-line
+haddock-style-module:
 newlines-between-decls: 1
 fixities: []
 ```

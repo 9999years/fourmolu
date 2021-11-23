@@ -34,6 +34,7 @@ module Ormolu.Config
     fillMissingPrinterOpts,
     CommaStyle (..),
     HaddockPrintStyle (..),
+    HaddockPrintStyleModule (..),
 
     -- ** Loading Fourmolu configuration
     loadConfigFile,
@@ -223,6 +224,7 @@ overFieldsM f $(unpackFieldsWithSuffix 'PrinterOpts "0") = do
   poDiffFriendlyImportExport <- f poDiffFriendlyImportExport0
   poRespectful <- f poRespectful0
   poHaddockStyle <- f poHaddockStyle0
+  poHaddockStyleModule <- f poHaddockStyleModule0
   poNewlinesBetweenDecls <- f poNewlinesBetweenDecls0
   return PrinterOpts {..}
 
@@ -341,6 +343,14 @@ printerOptsMeta =
                 (showAllValues haddockPrintStyleMap),
             metaDefault = HaddockMultiLine
           },
+      poHaddockStyleModule =
+        PrinterOptsFieldMeta
+          { metaName = "haddock-style-module",
+            metaGetField = poHaddockStyleModule,
+            metaPlaceholder = "STYLE",
+            metaHelp = "How to print module docstring",
+            metaDefault = PrintStyleNormal
+          },
       poNewlinesBetweenDecls =
         PrinterOptsFieldMeta
           { metaName = "newlines-between-decls",
@@ -401,6 +411,18 @@ instance PrinterOptsFieldType HaddockPrintStyle where
   parseJSON = parseJSONWith haddockPrintStyleMap "HaddockPrintStyle"
   parseText = parseTextWith haddockPrintStyleMap
   showText = show . showTextWith haddockPrintStyleMap
+
+instance PrinterOptsFieldType HaddockPrintStyleModule where
+  parseJSON = \case
+    Aeson.Null -> pure PrintStyleNormal
+    Aeson.String "" -> pure PrintStyleNormal
+    v -> PrintStyleOverride <$> parseJSON v
+  parseText = \case
+    "" -> pure PrintStyleNormal
+    s -> PrintStyleOverride <$> parseText s
+  showText = \case
+    PrintStyleNormal -> "same as 'haddock-style'"
+    PrintStyleOverride x -> showText x
 
 ----------------------------------------------------------------------------
 -- BijectiveMap helpers

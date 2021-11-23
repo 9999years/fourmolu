@@ -6,6 +6,7 @@ module Ormolu.Config.Types
   ( PrinterOpts (..),
     CommaStyle (..),
     HaddockPrintStyle (..),
+    HaddockPrintStyleModule (..),
   )
 where
 
@@ -29,6 +30,8 @@ data PrinterOpts f = PrinterOpts
     poRespectful :: f Bool,
     -- | How to print doc comments
     poHaddockStyle :: f HaddockPrintStyle,
+    -- | How to print the module docstring (defaults to poHaddockStyle)
+    poHaddockStyleModule :: f HaddockPrintStyleModule,
     -- | Number of newlines between top-level decls
     poNewlinesBetweenDecls :: f Int
   }
@@ -43,3 +46,8 @@ data HaddockPrintStyle
   = HaddockSingleLine
   | HaddockMultiLine
   deriving (Eq, Show, Enum, Bounded)
+
+data HaddockPrintStyleModule
+  = PrintStyleNormal
+  | PrintStyleOverride HaddockPrintStyle
+  deriving (Eq, Show)

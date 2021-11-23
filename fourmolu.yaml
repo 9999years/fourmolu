@@ -7,5 +7,6 @@ record-brace-space: true
 diff-friendly-import-export: false
 respectful: false
 haddock-style: single-line
+haddock-style-module:
 newlines-between-decls: 1
 fixities: []

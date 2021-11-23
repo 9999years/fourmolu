@@ -1,3 +1,7 @@
+## Unreleased
+
+* Add `haddock-style-module` option ([#135](https://github.com/fourmolu/fourmolu/pull/135))
+
 ## Fourmolu 0.7.0.1
 
 * Fix bad copy/paste where parsing errors for `haddock-style` would mention `CommaStyle`

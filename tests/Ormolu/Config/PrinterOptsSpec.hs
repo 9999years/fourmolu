@@ -23,6 +23,7 @@ import Ormolu
     detectSourceType,
     ormolu,
   )
+import Ormolu.Config (HaddockPrintStyleModule (..))
 import Ormolu.Utils.IO (readFileUtf8, writeFileUtf8)
 import Path
   ( File,
@@ -101,10 +102,24 @@ spec =
         },
       TestGroup
         { label = "haddock-style",
-          testCases = allOptions,
-          updateConfig = \haddockStyle opts -> opts {poHaddockStyle = pure haddockStyle},
-          showTestCase = show,
-          testCaseSuffix = suffix1
+          testCases = (,) <$> allOptions <*> (PrintStyleNormal : map PrintStyleOverride allOptions),
+          updateConfig = \(haddockStyle, haddockStyleModule) opts ->
+            opts
+              { poHaddockStyle = pure haddockStyle,
+                poHaddockStyleModule = pure haddockStyleModule
+              },
+          showTestCase = \(haddockStyle, haddockStyleModule) ->
+            show haddockStyle
+              ++ case haddockStyleModule of
+                PrintStyleNormal -> ""
+                PrintStyleOverride style -> " + module=" ++ show style,
+          testCaseSuffix = \(haddockStyle, haddockStyleModule) ->
+            suffixWith
+              [ show haddockStyle,
+                case haddockStyleModule of
+                  PrintStyleNormal -> ""
+                  PrintStyleOverride style -> "module=" ++ show style
+              ]
         },
       TestGroup
         { label = "newlines-between-decls",

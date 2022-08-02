@@ -18,6 +18,7 @@ where
 import Control.Exception
 import Control.Monad.IO.Class
 import qualified Data.ByteString as B
+import Data.IORef
 import Data.Map.Lazy (Map)
 import qualified Data.Map.Lazy as M
 import Data.Maybe (maybeToList)
@@ -35,6 +36,7 @@ import System.Directory
 import System.FilePath
 import System.IO (hPutStrLn, stderr)
 import System.IO.Error (isDoesNotExistError)
+import System.IO.Unsafe (unsafePerformIO)
 
 -- | Cabal information of interest to Ormolu.
 data CabalInfo = CabalInfo
@@ -103,6 +105,10 @@ findCabalFile sourceFile = liftIO $ do
         then pure Nothing
         else findCabalFile parentDir
 
+cabalCacheRef :: IORef (Map FilePath (GenericPackageDescription, Map FilePath ([DynOption], [String])))
+cabalCacheRef = unsafePerformIO $ newIORef M.empty
+{-# NOINLINE cabalCacheRef #-}
+
 -- | Parse 'CabalInfo' from a .cabal file at the given 'FilePath'.
 parseCabalInfo ::
   MonadIO m =>
@@ -115,13 +121,18 @@ parseCabalInfo ::
 parseCabalInfo cabalFileAsGiven sourceFileAsGiven = liftIO $ do
   cabalFile <- makeAbsolute cabalFileAsGiven
   sourceFileAbs <- makeAbsolute sourceFileAsGiven
-  cabalFileBs <- B.readFile cabalFile
-  genericPackageDescription <-
-    case parseGenericPackageDescriptionMaybe cabalFileBs of
-      Just gpd -> pure gpd
-      Nothing -> throwIO (OrmoluCabalFileParsingFailed cabalFile)
-  (dynOpts, dependencies) <- do
-    let extMap = getExtensionAndDepsMap cabalFile genericPackageDescription
+  cabalCache <- readIORef cabalCacheRef
+  (genericPackageDescription, extMap) <- case M.lookup cabalFile cabalCache of
+    Nothing -> do
+      cabalFileBs <- B.readFile cabalFile
+      gpd <- case parseGenericPackageDescriptionMaybe cabalFileBs of
+        Just gpd -> pure gpd
+        Nothing -> throwIO (OrmoluCabalFileParsingFailed cabalFile)
+      let extMap = getExtensionAndDepsMap cabalFile gpd
+      atomicModifyIORef' cabalCacheRef $
+        (,(gpd, extMap)) . M.insert cabalFile (gpd, extMap)
+    Just gpdAndExtMap -> pure gpdAndExtMap
+  (dynOpts, dependencies) <-
     case M.lookup (dropExtensions sourceFileAbs) extMap of
       Just exts -> pure exts
       Nothing -> do
@@ -168,7 +179,7 @@ getExtensionAndDepsMap cabalFile GenericPackageDescription {..} =
 
     extractFromBuildInfo extraModules BuildInfo {..} = (,(exts, deps)) $ do
       m <- extraModules ++ (ModuleName.toFilePath <$> otherModules)
-      (takeDirectory cabalFile </>) <$> prependSrcDirs (dropExtensions m)
+      normalise . (takeDirectory cabalFile </>) <$> prependSrcDirs (dropExtensions m)
       where
         prependSrcDirs f
           | null hsSourceDirs = [f]

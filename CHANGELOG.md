@@ -7,6 +7,16 @@
   844](https://github.com/tweag/ormolu/issues/844) and [issue
   828](https://github.com/tweag/ormolu/issues/828).
 
+* Switched to `ghc-lib-parser-9.6`:
+  * Extended `OverloadedLabels`: `#Foo`, `#3`, `#"Hello there"`.
+
+    Also, it is now disabled by default, as it causes e.g. `a#b` to be parsed
+    differently.
+  * New extension: `TypeData`, enabled by default.
+  * Parse errors now include error codes, cf. https://errors.haskell.org.
+
+* Updated to `Cabal-syntax-3.10`.
+
 ## Ormolu 0.5.3.0
 
 * Stop making empty `let`s move comments. [Issue

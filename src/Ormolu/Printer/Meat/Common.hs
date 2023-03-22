@@ -27,8 +27,8 @@ import GHC.Types.Name.Occurrence (OccName (..))
 import GHC.Types.Name.Reader
 import GHC.Types.SourceText
 import GHC.Types.SrcLoc
-import GHC.Unit.Module.Name
-import Ormolu.Config
+import Language.Haskell.Syntax.Module.Name
+import Ormolu.Config (SourceType (..), HaddockPrintStyle (..), poHaddockStyle)
 import Ormolu.Printer.Combinators
 import Ormolu.Utils
 
@@ -49,9 +49,9 @@ p_hsmodName mname = do
   space
   atom mname
 
-p_ieWrappedName :: IEWrappedName RdrName -> R ()
+p_ieWrappedName :: IEWrappedName GhcPs -> R ()
 p_ieWrappedName = \case
-  IEName x -> p_rdrName x
+  IEName _ x -> p_rdrName x
   IEPattern _ x -> do
     txt "pattern"
     space
@@ -235,4 +235,4 @@ p_hsDoc' poHStyle hstyle needsNewline (L l str) = do
 p_sourceText :: SourceText -> R ()
 p_sourceText = \case
   NoSourceText -> pure ()
-  SourceText s -> space >> txt (T.pack s)
+  SourceText s -> txt (T.pack s)

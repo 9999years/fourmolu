@@ -24,6 +24,7 @@ module Ormolu.Fixity.Internal
   )
 where
 
+import Control.DeepSeq (NFData)
 import Data.Binary (Binary)
 import Data.ByteString.Short (ShortByteString)
 import qualified Data.ByteString.Short as SBS
@@ -45,7 +46,7 @@ data FixityDirection
   | InfixR
   | InfixN
   deriving stock (Eq, Ord, Show, Generic)
-  deriving anyclass (Binary)
+  deriving anyclass (Binary, NFData)
 
 -- | Fixity information about an infix operator that takes the uncertainty
 -- that can arise from conflicting definitions into account.
@@ -60,7 +61,7 @@ data FixityInfo = FixityInfo
     fiMaxPrecedence :: Int
   }
   deriving stock (Eq, Ord, Show, Generic)
-  deriving anyclass (Binary)
+  deriving anyclass (Binary, NFData)
 
 -- | The lowest level of information we can have about an operator.
 defaultFixityInfo :: FixityInfo
@@ -100,7 +101,7 @@ newtype OpName = MkOpName
   { -- | Invariant: UTF-8 encoded
     getOpName :: ShortByteString
   }
-  deriving newtype (Eq, Ord, Binary)
+  deriving newtype (Eq, Ord, Binary, NFData)
 
 -- | Convert an 'OpName' to 'Text'.
 unOpName :: OpName -> Text
@@ -140,9 +141,9 @@ lookupFixity op (LazyFixityMap maps) = asum (Map.lookup op <$> maps)
 -- each package, if available.
 data HackageInfo
   = HackageInfo
+      -- | Map from package name to a map from operator name to its fixity
       (Map PackageName FixityMap)
-      -- ^ Map from package name to a map from operator name to its fixity
+      -- | Map from package name to its 30-days download count from Hackage
       (Map PackageName Int)
-      -- ^ Map from package name to its 30-days download count from Hackage
   deriving stock (Generic)
   deriving anyclass (Binary)

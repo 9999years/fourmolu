@@ -64,15 +64,14 @@ p_hsmodImport ImportDecl {..} = do
         space
         located l atom
     space
-    case ideclHiding of
+    case ideclImportList of
       Nothing -> return ()
-      Just (hiding, _) ->
-        when hiding (txt "hiding")
-    case ideclHiding of
-      Nothing -> return ()
-      Just (_, L _ xs) -> do
-        breakIfNotDiffFriendly
-        parens' True $ do
+      Just (hiding, L _ xs) -> do
+        case hiding of
+          Exactly -> pure ()
+          EverythingBut -> txt "hiding"
+        breakpoint
+        parens N $ do
           layout <- getLayout
           sep
             breakpoint

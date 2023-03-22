@@ -9,9 +9,9 @@ module Ormolu.Printer.Meat.Module
 where
 
 import Control.Monad
+import Language.Haskell.Syntax.Module.Name
 import GHC.Hs hiding (comment)
 import GHC.Types.SrcLoc
-import GHC.Unit.Module.Name
 import GHC.Utils.Outputable (ppr, showSDocUnsafe)
 import Ormolu.Config
 import Ormolu.Imports (normalizeImports)
@@ -33,10 +33,11 @@ p_hsModule ::
   -- | Pragmas and the associated comments
   [([RealLocated Comment], Pragma)] ->
   -- | AST to print
-  HsModule ->
+  HsModule GhcPs ->
   R ()
 p_hsModule mstackHeader pragmas hsmod@HsModule {..} = do
-  let deprecSpan = maybe [] (pure . getLocA) hsmodDeprecMessage
+  let XModulePs {..} = hsmodExt
+      deprecSpan = maybe [] (pure . getLocA) hsmodDeprecMessage
       exportSpans = maybe [] (pure . getLocA) hsmodExports
   switchLayout (deprecSpan <> exportSpans) $ do
     forM_ mstackHeader $ \(L spn comment) -> do
@@ -58,8 +59,15 @@ p_hsModule mstackHeader pragmas hsmod@HsModule {..} = do
       newline
       spitRemainingComments
 
-p_hsModuleHeader :: HsModule -> LocatedA ModuleName -> R ()
+p_hsModuleHeader :: HsModule GhcPs -> LocatedA ModuleName -> R ()
 p_hsModuleHeader HsModule {..} moduleName = do
+  let XModulePs {..} = hsmodExt
+      (moduleKeyword, whereKeyword) =
+        case am_main (anns hsmodAnn) of
+          -- [AnnModule, AnnWhere] or [AnnSignature, AnnWhere]
+          [AddEpAnn _ moduleLoc, AddEpAnn AnnWhere whereLoc] ->
+            (epaLocationRealSrcSpan moduleLoc, epaLocationRealSrcSpan whereLoc)
+          anns -> error $ "Module had unexpected annotations: " ++ showSDocUnsafe (ppr anns)
   located moduleName $ \name -> do
     poHStyle <-
       getPrinterOpt poHaddockStyleModule >>= \case
@@ -97,12 +105,6 @@ p_hsModuleHeader HsModule {..} moduleName = do
   txt "where"
   newline
   where
-    (moduleKeyword, whereKeyword) =
-      case am_main (anns hsmodAnn) of
-        -- [AnnModule, AnnWhere] or [AnnSignature, AnnWhere]
-        [AddEpAnn _ moduleLoc, AddEpAnn AnnWhere whereLoc] ->
-          (epaLocationRealSrcSpan moduleLoc, epaLocationRealSrcSpan whereLoc)
-        anns -> error $ "Module had unexpected annotations: " ++ showSDocUnsafe (ppr anns)
     exportClosePSpan = do
       AddEpAnn AnnCloseP loc <- al_close . anns . ann . getLoc =<< hsmodExports
       Just $ epaLocationRealSrcSpan loc
